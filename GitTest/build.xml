@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. -->
+<project basedir="." default="all" name="GitTest">
+    <property environment="env"/>
+    <property name="ECLIPSE_HOME" value="F:/Software/Developer/Eclipse/eclipse"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+	<property name="base.dir" value="./"/>
+    <property name="src.dir" location="${base.dir}/src"/>
+	<property name="test.reports.dir" location="${base.dir}/reports"/>  
+	<property name="test.data.dir" location="${base.dir}/data"/>  
+	<property name="junit.class.name" value="com.tasc.junit.AllTests"/> 
+	<property name="build.dir" location="${base.dir}/lib"/>
+	<property name="clover.jar" location="${base.dir}/lib/clover.jar"/>
+	<property name="checkstyle.jar" location="${base.dir}/lib/checkstyle-5.5-all.jar"/>
+		
+	<path id="src.classpath">
+		<pathelement location="src"/>
+	</path>
+    <path id="GitTest.classpath">
+        <pathelement location="bin"/>
+    </path>
+	<path id="build.classpath">
+		<fileset dir="${build.dir}">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+	
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    	<delete includeEmptyDirs="true" failonerror="false">
+    		<fileset dir="${test.reports.dir}">
+    			<include name="**/*.txt"/>
+    			<include name="**/*.xml"/>
+    			<include name="**/*.html"/>
+    		</fileset>
+    	</delete>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="GitTest.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+    <target name="GitTest">
+        <java classname="GitTest" failonerror="true" fork="yes">
+            <classpath refid="GitTest.classpath"/>
+        </java>
+    </target>
+	<target name="build-test" depends="build">
+		<javac srcdir="${src.dir}" destdir="${src.dir}" debug="true" includeAntRuntime="false">
+			<include name="**/*.java"/>
+		</javac>
+	</target>
+	<target name="test" depends="build-test">
+		<mkdir dir="${test.data.dir}"/>
+		<mkdir dir="${test.reports.dir}"/>
+		<junit fork="no" haltonfailure="no" showoutput="yes" printsummary="true">
+			<test name="${junit.class.name}" todir="${test.data.dir}"/>
+			<formatter type="brief" usefile="false"/>
+			<formatter type="xml"/>
+			<classpath refid="src.classpath"/>
+			<classpath refid="GitTest.classpath"/>
+		</junit>
+		<junitreport todir="${test.reports.dir}">
+			<fileset dir="${test.data.dir}">
+				<include name="TEST-*.xml"/>
+			</fileset>
+			<report format="frames" todir="${test.reports.dir}"/>
+		</junitreport>
+	</target>	
+	<taskdef resource="cloverlib.xml" classpath="${clover.jar}"/>
+	<target name="clover-test" depends="test" description="Run the tests">
+		<mkdir dir="${test.reports.dir}/clover"/>
+		<junit fork="yes" printsummary="true" showoutput="true">
+			<classpath refid="GitTest.classpath"/>
+			<classpath refid="build.classpath"/>
+			<formatter type="xml"/>
+			<batchtest fork="yes" todir="${test.reports.dir}">
+				<fileset dir="src" includes="**/*.java"/>
+			</batchtest>
+		</junit>
+	</target>
+	<target name="checkstyle" depends="test">
+		<mkdir dir="${test.reports.dir}/checkstyle"/>		
+		<taskdef resource="checkstyletask.properties" classpath="${checkstyle.jar}"/>
+		<!--<taskdef name="checkstyle" classname="com.puppycrawl.tools.checkstyle.CheckStyleTask" classpath="${checkstyle.jar}"/>//-->
+		<checkstyle config="docs\sun_checks.xml" failureProperty="checkstyle.failure" failonViolation="false">
+			<formatter type="xml" tofile="checkstyle_report.xml"/>
+			<fileset dir="src" includes="**/*.java"/>
+		</checkstyle>
+		<style in="checkstyle_report.xml" out="${test.reports.dir}/checkstyle/checkstyle_report.html" style="checkstyle-frames.xsl"/>
+	</target>
+	
+	<target name="all" depends="test"/>
+</project>
